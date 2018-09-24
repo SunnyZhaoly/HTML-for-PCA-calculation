@@ -1,0 +1,204 @@
+---
+title: "sample work in class"
+author: "Lingyi Zhao"
+date: "2018/3/26"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## R Markdown
+
+```{r}
+#
+rm(list=ls(all=TRUE))
+setwd("~/Desktop")
+data<-read.csv("Number_Parity.csv")
+#a)
+pairs(data)
+colnames(data)<-c("x1","x2","x3","x4")
+qqnorm(data$x1)
+qqnorm(data$x2)
+qqnorm(data$x3)
+qqnorm(data$x4)
+#According to qqplot and scatterplot, we can say that the data are a random sample from a mulvariate normal population. 
+#b)
+xbar<-colMeans(data)
+xbar
+S<-cov(data)
+S
+c1<-c(-1,1,-1,1)
+c2<-c(-1,-1,1,1)
+c3<-c(-1,1,1,-1)
+C<-rbind(c1,c2,c3)
+C
+n<-nrow(data)
+p<-ncol(data)
+n
+p
+C.xbar<-as.vector(C%*%xbar)
+C.xbar
+T2<-n*sum(C.xbar*solve(C%*%S%*%t(C), C.xbar))
+T2
+1-pf((n-p+1)/((n-1)*(p-1))*T2,df1=p-1, df2 = n-p+1)
+#P-value is 2.328437e-11
+#We can find the p-value is essentially zero: the time for each part are different. And the parity effect have influence on format effect. 
+#c)
+b1 <- c1 
+b2 <- c2
+b3 <- c3
+F.mult <- sqrt((n-1)*(p-1)/(n-p+1) * qf(.95,p-1,n-p+1))
+sum(b1*xbar) + c(-1,1) * F.mult * sqrt(sum(b1 * S %*% b1) / n)
+sum(b2*xbar) + c(-1,1) * F.mult * sqrt(sum(b2 * S %*% b2) / n)
+sum(b3*xbar) + c(-1,1) * F.mult * sqrt(sum(b3 * S %*% b3) / n)
+#[1] -282.1995 -130.4567
+#[1] -415.7364 -198.1074
+#[1] -31.82305  76.66680
+#we note the interval for the interaction contrast contains zero. So there is no evidence of parity and format effect. Both main effects are statistically significant, which means the main effect of format have larger magnitude than that of parity effect. 
+
+
+```
+
+```{r}
+#2
+#a)
+setwd("~/Desktop")
+data2<-read.csv("Turtles.csv")
+X <- as.matrix(data2[,1:3])
+rm(data2)
+dim(X)
+X1 <- X[1:24,]
+X2 <- X[25:48,]
+n1 <- nrow(X1)
+n2 <- nrow(X2)
+p <- ncol(X2)
+rownames(X1) <- 1:n1
+rownames(X2) <- 1:n2
+xbar1 <- colMeans(X1)
+xbar1
+xbar2 <- colMeans(X2)
+S1 <- cov(X1)
+S2 <- cov(X2)
+S <- 1/(n1 + n2 - 2) * ( (n1-1)*S1 + (n2-1)*S2 )
+T2 <- 1/(1/n1 + 1/n2) * sum((xbar1 - xbar2) *solve(S, xbar1 - xbar2))
+T2
+1 - pf((n1+n2-p-1)/((n1+n2-2)*p)*T2, df1=p, df2=n1+n2-p-1)
+#We note that the P-value is nearly zero, thus the data provide evidence that the mean vectors are different. 
+#b)
+alpha <- .05
+S1<-diag(S)[1]
+xbar1[1]-xbar2[1]+c(-1,1)*qt(1-alpha/(2*p), df=n1+n2-2)*sqrt((1/n1+1/n2)*(S1))
+S2<-diag(S)[2]
+xbar1[2]-xbar2[2]+c(-1,1)*qt(1-alpha/(2*p), df=n1+n2-2)*sqrt((1/n1+1/n2)*(S2))
+S3<-diag(S)[3]
+xbar1[3]-xbar2[3]+c(-1,1)*qt(1-alpha/(2*p), df=n1+n2-2)*sqrt((1/n1+1/n2)*(S3))
+#Thus, we can find that CI for x1,x2 and x3 do not have 0, which means the mean vectors have difference. This is the same conclusion with last part a.  
+```
+
+```{r}
+#3
+#a)
+#data3<-read.csv("Track_Records.csv")
+data3new<-data3[,2:8]
+n<-dim(data3new)[1]
+p <- dim(data3new)[2]
+names(data3new) <- paste("x",1:p,sep="")
+R<-cor(data3new)
+R
+eigen(R)
+G.R <- eigen(R)$vectors
+round(G.R, 6)
+#b)
+L.R <- diag(eigen(R)$values)
+L.R
+diag(L.R) / sum(diag(L.R))
+cumsum(diag(L.R)) / sum(diag(L.R))
+#Thus, we can see that the first PC explained 82.97% of total standardized variance and the first two NPCs explained 91.95% of total standardized variance. Thus, the first 2 NPCs we should retain if our goal is to account for 90% of total standarized variance. 
+plot(diag(L.R), type="b", main="Scree plot for PCA of record data")
+#The first two principalcomponents are given by :
+#Y1 = −0.3778Z1 − 0.3832Z2 − 0.368Z3 − 0.3948Z4 − 0.3893Z5 − 0.3761Z6 − 0.3552Z7
+#Y2 = −0.4072Z1 − 0.4136Z2 − 0.4594Z3 + 0.1612Z4 + 0.3091Z5 + 0.4232Z6 + 0.3892Z7
+#where Zi is the ith standardized variable. The components are computed more fully below:
+Z <- scale(data3new, center=TRUE, scale=TRUE)
+npc <- Z %*% G.R
+#c)
+G.R
+#First PC is more or less straight average. The first PC explain 82.97% of standardized variance. All track events contribute about equally to the first component.The second PC contrasts the time for the shorter distances(100m, 200m, 400m) with the times for the longer distances(800m, 1500m, 3000m, marathon). 
+#d)
+ranking<-data3[sort(npc[,1], decreasing = TRUE, index.return=TRUE)$ix,"Country"]
+head(ranking)
+ranking
+#The top 6 nations, ranked according to their score on the first principal component, are: USA, Germany, Russia, China, France, Great Britain. This ranking corresponds with my intuitive notion of athletic excellence in running events for countries 
+#e)
+library(ggplot2)
+rownames(data3new)<-data3$Country
+pca<- princomp(data3new, cor = TRUE)
+scores<-as.data.frame(pca$scores)
+scores
+ggplot(data = scores, aes(x = Comp.1, y = Comp.2, label = rownames(scores))) +
+  geom_hline(yintercept = 0, colour = "gray65") +
+  geom_vline(xintercept = 0, colour = "gray65") +
+  geom_text(colour = "tomato", alpha = 0.8, size = 2.5) +
+  ggtitle("PCA plot")
+#in the graph, we can clearly see there are three points(COK, SAM, KOR_N) are stand out with others. we know COK is Cook Islands, SAM is Samoa, and NOR_N is North Korea. The first principal component represents a measure of the overall athletic prowess of countries: countries with above average times on the majority of events tend to have high scores on this component. So weak nations (like the Cook Islands and Samoa) appear on the left of the scatterplot. The second component mainly contrasts performance in sprints with the performance in the short and long distances. Countries particularly good at the longer distances (like North Korea) tend to have high scores on this component, and appear towards the bottom of the plot. 
+```
+
+```{r}
+#4）
+#a)
+data4<-data3[,]
+data4[,2]<-100/data4$x1
+data4[,3]<-200/data4$x2
+data4[,4]<-400/data4$x3
+data4[,5]<-800/data4$x4/60
+data4[,6]<-1500/data4$x5/60
+data4[,7]<-3000/data4$x6/60
+data4[,8]<-42195/data4$x7/60
+#b)
+data4new<-data4[,2:8]
+n <- dim(data4new)[1]
+p <- dim(data4new)[2]
+names(data4new) <- paste("x",1:p,sep="")
+S<-cov(data4new)
+S
+eigen(S)
+xbar <- colMeans(data4new)
+ones <- rep(1, n)
+X <- as.matrix(data4new)
+rownames(X) <- 1:n
+colnames(X) <- colnames(data4new)
+H.X <- X - ones %*% t(xbar)
+cov(H.X)
+G <- eigen(S)$vectors
+Y <- H.X %*% G
+colnames(Y) <- paste("y",1:p,sep="")
+G
+L <- diag(eigen(S)$values)
+cumsum(diag(L)) / sum(diag(L))
+#We find the first PC explained 82.85% of total sample variance and first two NPCs explained 92.59% of total sample variance. Thus we need to retain first two NPCs if we want to account 90% of total sample variance. 
+Z <- scale(data4new, center=TRUE, scale=TRUE)
+npc2 <- Z %*% G
+#c)
+G
+#First PC is more or less straight average. The first PC explain 82.85% of standardized variance. All track events contribute about equally to the first component.The second PC contrasts the time for the shorter distances(100m, 200m, 400m) with the times for the longer distances(800m, 1500m, 3000m, marathon). The interpresentations of this part are very similar to the previous exercise. 
+#d)
+ranking2<-data3[sort(npc2[,1], decreasing = TRUE, index.return=TRUE)$ix,"Country"]
+head(ranking2)
+ranking2
+#Yes, the subsequent ranking is almost complete opposite with previous problem. But I think that is make sense because in this question we calculate the rate. 
+#e)
+rownames(data4new)<-data4$Country
+pca2<- princomp(data4new, cor = TRUE)
+scores2<-as.data.frame(pca$scores)
+scores2
+ggplot(data = scores2, aes(x = Comp.1, y = Comp.2, label = rownames(scores))) +
+  geom_hline(yintercept = 0, colour = "gray65") +
+  geom_vline(xintercept = 0, colour = "gray65") +
+  geom_text(colour = "tomato", alpha = 0.8, size = 2.5) +
+  ggtitle("PCA plot of average speed for the race")
+#Again, the first principal component represents a measure of the overall athletic prowess of countries: countries with above average times on the majority of events tend to have high scores on this component. So weak nations (like the Cook Islands and Samoa) appear on the left of the scatterplot. The second component mainly contrasts performance in sprints with the performance in the short and long distances. Countries particularly good at the longer distances (like North Korea) tend to have high scores on this component, and appear towards the bottom of the plot. 
+```
+
